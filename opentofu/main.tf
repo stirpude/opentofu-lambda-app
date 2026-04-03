@@ -23,13 +23,6 @@ resource "null_resource" "build_lambda" {
   provisioner "local-exec" {
     command     = "cd ${var.source_dir} && npm install && npm run build && npm install --omit=dev"
     interpreter = ["bash", "-c"]
-    when        = create
-  }
-
-  provisioner "local-exec" {
-    command     = "cd ${var.source_dir} && npm run build"
-    interpreter = ["bash", "-c"]
-    when        = update
   }
 }
 
