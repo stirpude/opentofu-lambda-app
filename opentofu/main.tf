@@ -14,25 +14,35 @@ provider "aws" {
   region = var.aws_region
 }
 
+# Build the TypeScript function FIRST
+resource "null_resource" "build_lambda" {
+  provisioner "local-exec" {
+    command = "cd ${var.source_dir} && npm install && npm run build && npm install --omit=dev"
+    interpreter = ["bash", "-c"]
+  }
+
+  triggers = {
+    handler_hash = filemd5("${var.source_dir}/index.ts")
+  }
+}
+
+# Ensure dist directory exists for archive
+resource "null_resource" "ensure_dist" {
+  depends_on = [null_resource.build_lambda]
+  
+  provisioner "local-exec" {
+    command = "mkdir -p ${var.source_dir}/dist"
+    interpreter = ["bash", "-c"]
+  }
+}
+
 # Archive the Lambda function code
 data "archive_file" "lambda_zip" {
   type        = "zip"
   source_dir  = "${var.source_dir}/dist"
   output_path = "${path.module}/lambda_function.zip"
 
-  depends_on = [null_resource.build_lambda]
-}
-
-# Build the TypeScript function
-resource "null_resource" "build_lambda" {
-  triggers = {
-    handler_hash = filemd5("${var.source_dir}/index.ts")
-  }
-
-  provisioner "local-exec" {
-    command     = "cd ${var.source_dir} && npm install && npm run build"
-    interpreter = ["bash", "-c"]
-  }
+  depends_on = [null_resource.ensure_dist]
 }
 
 # IAM role for Lambda function
