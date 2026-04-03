@@ -52,19 +52,27 @@ jobs:
           aws-region: us-east-1
 
       - name: Initialize OpenTofu
-        run: tofu init
+        run: |
+          cd opentofu
+          tofu init
         env:
           TF_INPUT: false
 
       - name: Validate OpenTofu configuration
-        run: tofu validate
+        run: |
+          cd opentofu
+          tofu validate
 
       - name: Format check
-        run: tofu fmt -check -recursive
+        run: |
+          cd opentofu
+          tofu fmt -check -recursive
 
       - name: Plan infrastructure
         id: plan
-        run: tofu plan -no-color -out=tfplan
+        run: |
+          cd opentofu
+          tofu plan -no-color -out=tfplan
         continue-on-error: true
 
       - name: Comment PR with plan
@@ -114,21 +122,28 @@ jobs:
           aws-region: us-east-1
 
       - name: Initialize OpenTofu
-        run: tofu init
+        run: |
+          cd opentofu
+          tofu init
         env:
           TF_INPUT: false
 
       - name: Plan infrastructure
-        run: tofu plan -no-color -out=tfplan
+        run: |
+          cd opentofu
+          tofu plan -no-color -out=tfplan
 
       - name: Apply infrastructure
-        run: tofu apply -auto-approve tfplan
+        run: |
+          cd opentofu
+          tofu apply -auto-approve tfplan
         env:
           TF_INPUT: false
 
       - name: Get outputs
         id: outputs
         run: |
+          cd opentofu
           echo "lambda_arn=$(tofu output -raw lambda_function_arn)" >> $GITHUB_OUTPUT
           echo "lambda_name=$(tofu output -raw lambda_function_name)" >> $GITHUB_OUTPUT
 
