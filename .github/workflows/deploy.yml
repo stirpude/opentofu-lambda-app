@@ -50,7 +50,6 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::391122274211:role/GitHubRole-Role-EnNpHp52UHLI
           aws-region: us-east-1
-          disable-file-permissions: true
 
       - name: Initialize OpenTofu
         run: tofu init
@@ -113,7 +112,6 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::391122274211:role/GitHubRole-Role-EnNpHp52UHLI
           aws-region: us-east-1
-          disable-file-permissions: true
 
       - name: Initialize OpenTofu
         run: tofu init
