@@ -1,0 +1,15 @@
+{
+  "name": "lambda-function",
+  "version": "1.0.0",
+  "description": "Hello World Lambda function",
+  "main": "index.ts",
+  "scripts": {
+    "build": "tsc",
+    "zip": "zip -r function.zip dist node_modules"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}

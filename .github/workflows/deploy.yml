@@ -1,0 +1,154 @@
+name: Deploy Lambda with OpenTofu
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '**.tf'
+      - 'src/**'
+      - '.github/workflows/deploy.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '**.tf'
+      - 'src/**'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+
+env:
+  AWS_REGION: us-east-1
+  TF_VERSION: 1.6.0
+
+jobs:
+  plan:
+    name: Plan Infrastructure
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: ${{ env.TF_VERSION }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::391122274211:role/GitHubRole-Role-EnNpHp52UHLI
+          aws-region: us-east-1
+
+      - name: Initialize OpenTofu
+        run: tofu init
+        env:
+          TF_INPUT: false
+
+      - name: Validate OpenTofu configuration
+        run: tofu validate
+
+      - name: Format check
+        run: tofu fmt -check -recursive
+
+      - name: Plan infrastructure
+        id: plan
+        run: tofu plan -no-color -out=tfplan
+        continue-on-error: true
+
+      - name: Comment PR with plan
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        env:
+          PLAN: "terraform\n${{ steps.plan.outputs.stdout }}"
+        with:
+          script: |
+            const fs = require('fs');
+            const plan = process.env.PLAN;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## Terraform Plan\n\`\`\`\n${plan}\n\`\`\``
+            });
+
+  apply:
+    name: Apply Infrastructure
+    needs: plan
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: ${{ env.TF_VERSION }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::391122274211:role/GitHubRole-Role-EnNpHp52UHLI
+          aws-region: us-east-1
+
+      - name: Initialize OpenTofu
+        run: tofu init
+        env:
+          TF_INPUT: false
+
+      - name: Plan infrastructure
+        run: tofu plan -no-color -out=tfplan
+
+      - name: Apply infrastructure
+        run: tofu apply -auto-approve tfplan
+        env:
+          TF_INPUT: false
+
+      - name: Get outputs
+        id: outputs
+        run: |
+          echo "lambda_arn=$(tofu output -raw lambda_function_arn)" >> $GITHUB_OUTPUT
+          echo "lambda_name=$(tofu output -raw lambda_function_name)" >> $GITHUB_OUTPUT
+
+      - name: Create deployment summary
+        run: |
+          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Lambda function deployed successfully" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Function Details:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Name: ${{ steps.outputs.outputs.lambda_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- ARN: ${{ steps.outputs.outputs.lambda_arn }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Region: ${{ env.AWS_REGION }}" >> $GITHUB_STEP_SUMMARY
+
+  cleanup:
+    name: Clean up on failure
+    needs: [plan, apply]
+    if: failure() && github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    
+    steps:
+      - name: Notify failure
+        run: |
+          echo "⚠️ Deployment failed. Please review the logs above."
+          exit 1

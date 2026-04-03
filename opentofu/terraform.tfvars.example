@@ -1,0 +1,10 @@
+# AWS Configuration
+aws_region = "us-east-1"
+
+# Lambda Configuration
+function_name = "hello-world-typescript"
+runtime       = "nodejs20.x"
+handler       = "index.handler"
+
+# Source directory (relative to Terraform working directory)
+# source_dir = "./src"
