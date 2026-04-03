@@ -8,6 +8,8 @@ terraform {
   }
 }
 
+# GitHub Actions deployment trigger
+
 provider "aws" {
   region = var.aws_region
 }
