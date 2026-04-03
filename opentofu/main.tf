@@ -17,7 +17,7 @@ provider "aws" {
 # Build the TypeScript function FIRST
 resource "null_resource" "build_lambda" {
   provisioner "local-exec" {
-    command = "cd ${var.source_dir} && npm install && npm run build && npm install --omit=dev"
+    command     = "cd ${var.source_dir} && npm install && npm run build && npm install --omit=dev"
     interpreter = ["bash", "-c"]
   }
 
@@ -29,9 +29,9 @@ resource "null_resource" "build_lambda" {
 # Ensure dist directory exists for archive
 resource "null_resource" "ensure_dist" {
   depends_on = [null_resource.build_lambda]
-  
+
   provisioner "local-exec" {
-    command = "mkdir -p ${var.source_dir}/dist"
+    command     = "mkdir -p ${var.source_dir}/dist"
     interpreter = ["bash", "-c"]
   }
 }
