@@ -15,5 +15,5 @@ output "lambda_role_arn" {
 
 output "lambda_zip_path" {
   description = "Path to the created Lambda deployment package"
-  value       = data.archive_file.lambda_zip.output_path
+  value       = archive_file.lambda_zip.output_path
 }

@@ -63,12 +63,12 @@ resource "aws_iam_role_policy_attachment" "lambda_basic_execution" {
 
 # Lambda function
 resource "aws_lambda_function" "hello_world" {
-  filename         = data.archive_file.lambda_zip.output_path
+  filename         = archive_file.lambda_zip.output_path
   function_name    = var.function_name
   role             = aws_iam_role.lambda_role.arn
   handler          = var.handler
   runtime          = var.runtime
-  source_code_hash = data.archive_file.lambda_zip.output_base64sha256
+  source_code_hash = archive_file.lambda_zip.output_base64sha256
 
   environment {
     variables = {
@@ -78,6 +78,6 @@ resource "aws_lambda_function" "hello_world" {
 
   depends_on = [
     aws_iam_role_policy_attachment.lambda_basic_execution,
-    data.archive_file.lambda_zip
+    archive_file.lambda_zip
   ]
 }

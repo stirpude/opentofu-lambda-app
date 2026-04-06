@@ -27,3 +27,9 @@ variable "source_dir" {
   type        = string
   default     = "../src"
 }
+
+variable "ci_build_id" {
+  description = "Build ID for forcing rebuilds in CI/CD pipelines"
+  type        = string
+  default     = ""
+}
