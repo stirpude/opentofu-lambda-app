@@ -21,7 +21,7 @@ provider "aws" {
 # Build the TypeScript function during plan phase using external data source
 # This ensures dist directory exists before archive_file tries to read it
 data "external" "build_lambda" {
-  program = ["bash", "-c", "cd ${var.source_dir} && npm install && npm run build && npm install --omit=dev && echo '{\"status\": \"built\"}'"]
+  program = ["bash", "-c", "cd ${var.source_dir} && npm install >/dev/null 2>&1 && npm run build >/dev/null 2>&1 && npm install --omit=dev >/dev/null 2>&1 && echo '{\"status\": \"built\"}'"]
 }
 
 # Archive the Lambda function code using RESOURCE (not data source) for CI/CD
