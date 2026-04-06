@@ -5,6 +5,10 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+    external = {
+      source  = "hashicorp/external"
+      version = "~> 2.0"
+    }
   }
 }
 
@@ -14,29 +18,10 @@ provider "aws" {
   region = var.aws_region
 }
 
-# Build the TypeScript function - force rebuild in CI/CD with environment variable
-resource "null_resource" "build_lambda" {
-  triggers = {
-    source_hash = filemd5("${var.source_dir}/index.ts")
-    # Force rebuild in CI/CD pipelines and GitHub Actions
-    ci_context = try(var.ci_build_id, "local")
-  }
-
-  provisioner "local-exec" {
-    command     = "mkdir -p ${var.source_dir}/dist && cd ${var.source_dir} && npm install && npm run build && npm install --omit=dev"
-    interpreter = ["bash", "-c"]
-  }
-}
-
-# Ensure dist directory exists before archiving
-resource "null_resource" "ensure_dist" {
-  triggers = {
-    build_id = null_resource.build_lambda.id
-  }
-
-  provisioner "local-exec" {
-    command = "mkdir -p ${var.source_dir}/dist"
-  }
+# Build the TypeScript function during plan phase using external data source
+# This ensures dist directory exists before archive_file tries to read it
+data "external" "build_lambda" {
+  program = ["bash", "-c", "cd ${var.source_dir} && npm install && npm run build && npm install --omit=dev && echo '{\"status\": \"built\"}'"]
 }
 
 # Archive the Lambda function code using RESOURCE (not data source) for CI/CD
@@ -45,7 +30,7 @@ resource "archive_file" "lambda_zip" {
   source_dir  = "${var.source_dir}/dist"
   output_path = "${path.module}/lambda_function.zip"
 
-  depends_on = [null_resource.ensure_dist]
+  depends_on = [data.external.build_lambda]
 }
 
 # IAM role for Lambda function
