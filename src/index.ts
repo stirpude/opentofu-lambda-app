@@ -4,7 +4,7 @@ export const handler = async (event: any) => {
   const response = {
     statusCode: 200,
     body: JSON.stringify({
-      message: "Hello World from TypeScript Lambda!This is an updated source code with my lastest code changes.",
+      message: "Hello World from TypeScript Lambda!This is an updated source code with my lastest code changes.Yess it worked with IAC",
       timestamp: new Date().toISOString(),
       event: event,
     }),
