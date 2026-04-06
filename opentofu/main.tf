@@ -14,10 +14,12 @@ provider "aws" {
   region = var.aws_region
 }
 
-# Build the TypeScript function FIRST
+# Build the TypeScript function - force rebuild in CI/CD with environment variable
 resource "null_resource" "build_lambda" {
   triggers = {
     source_hash = filemd5("${var.source_dir}/index.ts")
+    # Force rebuild in CI/CD pipelines and GitHub Actions
+    ci_context = try(var.ci_build_id, "local")
   }
 
   provisioner "local-exec" {
@@ -26,8 +28,8 @@ resource "null_resource" "build_lambda" {
   }
 }
 
-# Archive the Lambda function code (no ensure_dist needed - build creates it)
-data "archive_file" "lambda_zip" {
+# Archive the Lambda function code using RESOURCE (not data source) for CI/CD
+resource "archive_file" "lambda_zip" {
   type        = "zip"
   source_dir  = "${var.source_dir}/dist"
   output_path = "${path.module}/lambda_function.zip"
