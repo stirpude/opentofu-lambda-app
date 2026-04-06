@@ -23,8 +23,19 @@ resource "null_resource" "build_lambda" {
   }
 
   provisioner "local-exec" {
-    command     = "cd ${var.source_dir} && npm install && npm run build && npm install --omit=dev"
+    command     = "mkdir -p ${var.source_dir}/dist && cd ${var.source_dir} && npm install && npm run build && npm install --omit=dev"
     interpreter = ["bash", "-c"]
+  }
+}
+
+# Ensure dist directory exists before archiving
+resource "null_resource" "ensure_dist" {
+  triggers = {
+    build_id = null_resource.build_lambda.id
+  }
+
+  provisioner "local-exec" {
+    command = "mkdir -p ${var.source_dir}/dist"
   }
 }
 
@@ -34,7 +45,7 @@ resource "archive_file" "lambda_zip" {
   source_dir  = "${var.source_dir}/dist"
   output_path = "${path.module}/lambda_function.zip"
 
-  depends_on = [null_resource.build_lambda]
+  depends_on = [null_resource.ensure_dist]
 }
 
 # IAM role for Lambda function
