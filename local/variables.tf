@@ -25,5 +25,5 @@ variable "table_name" {
 variable "source_dir" {
   description = "Directory containing the TypeScript Lambda source."
   type        = string
-  default     = "../../../src-local"
+  default     = "../src-local"
 }

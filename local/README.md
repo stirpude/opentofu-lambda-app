@@ -5,7 +5,7 @@ This stack provisions and runs the TypeScript Lambda and its DynamoDB table
 — no AWS account, no deployment. OpenTofu talks to the emulator exactly as it
 would to AWS.
 
-## Why AWS Emulator (vs. the LocalStack config in `../`)
+## Why AWS Emulator (vs. the LocalStack config in `opentofu/local/`)
 
 The emulator is generated from AWS API models and aims for full fidelity on
 supported operations. Key behaviors verified for this stack:
@@ -32,7 +32,7 @@ otherwise it uses default SDK config (emulator and real AWS).
 > `aarch64` RPM; change it to `x86_64` on Intel.
 
 ```bash
-cd opentofu/local/emulator
+cd local
 docker build -t aws-emulator .
 ```
 
@@ -64,7 +64,7 @@ tofu apply -auto-approve
 ```
 
 This creates: DynamoDB table, IAM role + DynamoDB policy, and the Lambda
-function (built from `../../../src-local`).
+function (built from `../src-local`).
 
 ## Step 4 — Invoke the Lambda end-to-end
 
