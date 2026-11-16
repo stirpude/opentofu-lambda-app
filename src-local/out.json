@@ -1,1 +1,1 @@
-{"statusCode":500,"body":"{\"message\":\"❌ Failed to connect to DynamoDB\",\"endpoint\":\"default (emulator/AWS-managed)\",\"error\":\"Requested resource not found\"}"}
+{"statusCode":201,"body":"{\"message\":\"Item successfully written to DynamoDB\",\"itemId\":\"order-123\",\"timestamp\":\"2026-11-16T04:41:16.422Z\"}"}
