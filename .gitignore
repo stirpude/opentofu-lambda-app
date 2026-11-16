@@ -8,6 +8,8 @@ terraform.tfstate.*
 # Lambda build artifacts
 src/dist/
 src/node_modules/
+src-local/dist/
+src-local/node_modules/
 lambda_function.zip
 
 # IDE

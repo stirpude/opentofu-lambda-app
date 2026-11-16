@@ -25,5 +25,5 @@ variable "handler" {
 variable "source_dir" {
   description = "Source directory for Lambda function"
   type        = string
-  default     = "../src"
+  default     = "../src-local"
 }
