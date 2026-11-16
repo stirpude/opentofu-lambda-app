@@ -114,6 +114,26 @@ E="--endpoint-url https://127.0.0.1:9297 --ca-bundle $CA"
 echo "E=[$E]"      # must print the flags, not E=[]
 ```
 
+> **zsh users:** unlike bash, zsh does **not** word-split an unquoted variable,
+> so `aws $E ...` fails with `no such file or directory: aws --endpoint-url ...`.
+> Use one of these instead:
+>
+> ```zsh
+> # Option A — define a helper function (recommended)
+> awsx() { aws --endpoint-url https://127.0.0.1:9297 --ca-bundle ~/.aws/emulator/9297/ca.pem --region us-east-1 "$@"; }
+> export AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test
+> awsx dynamodb list-tables         # then use `awsx ...` everywhere
+>
+> # Option B — force word-splitting of the variable
+> ${=E} dynamodb list-tables
+>
+> # Option C — type the flags literally on each command
+> aws --endpoint-url https://127.0.0.1:9297 --ca-bundle ~/.aws/emulator/9297/ca.pem --region us-east-1 dynamodb list-tables
+> ```
+>
+> In the examples below, `aws $E ...` works as-is in **bash**. In **zsh**, read
+> `aws $E` as `awsx` (Option A).
+
 ### 4.4 Create the DynamoDB table
 
 ```bash
@@ -189,19 +209,89 @@ Notes:
 
 ---
 
-## 6. Alternative — provision with OpenTofu
+## 6. Alternative — create resources with OpenTofu
 
-Instead of the CLI, you can let OpenTofu create the same resources:
+Instead of the AWS CLI, you can let **OpenTofu** create the same resources
+declaratively. This talks to the emulator exactly as it would to real AWS.
+
+> **Run OpenTofu from the `local/` folder only.** Do **not** run it in the
+> project's `opentofu/` folder for emulator testing — that folder is the
+> real-AWS deployment config.
+
+### 6.1 Start the emulator (if not already running)
 
 ```bash
 cd local
-nvm use 20
-tofu init
+docker run -d --name aws-emulator --memory=2g --memory-swap=2g \
+  -p 127.0.0.1:9297:9297 -e HOME="$HOME" \
+  -v "$HOME/.aws/emulator:$HOME/.aws/emulator" \
+  aws-emulator -p 9297 -a off
+sleep 4
+curl -s --cacert ~/.aws/emulator/9297/ca.pem https://127.0.0.1:9297/__admin/health; echo   # -> ok
+```
+
+### 6.2 Initialize and apply
+
+```bash
+cd local
+nvm use 20           # the TS build that OpenTofu triggers needs Node 20
+tofu init            # first time only — downloads providers
+tofu plan            # preview the changes
 tofu apply -auto-approve
 ```
 
-The provider in `provider.tf` points Lambda, DynamoDB, IAM, STS and Logs at the
-emulator endpoint. `main.tf` defines the table, role + policy and function.
+This creates the DynamoDB table, IAM role + policy and the Lambda. On success
+you'll see outputs:
+
+```
+emulator_endpoint = "https://127.0.0.1:9297"
+function_arn      = "arn:aws:lambda:us-east-1:000000000000:function:my-func"
+function_name     = "my-func"
+table_name        = "lambda-test-table"
+```
+
+- `provider.tf` points Lambda, DynamoDB, IAM, STS and Logs at the emulator
+  endpoint (HTTPS, self-signed cert, dummy static credentials).
+- `variables.tf` holds the region, endpoint, resource names and source dir.
+- `main.tf` defines the table, role + policy and function.
+
+### 6.3 Verify the OpenTofu-created resources
+
+```bash
+tofu output          # shows function_arn, table_name, emulator_endpoint
+
+# invoke the function (bash). In zsh, use the awsx helper from section 4.3.
+aws --endpoint-url https://127.0.0.1:9297 --ca-bundle ~/.aws/emulator/9297/ca.pem --region us-east-1 \
+  lambda invoke --function-name my-func --cli-binary-format raw-in-base64-out \
+  --payload '{"action":"put","id":"tf-1","data":"from tofu"}' out.json && cat out.json
+
+# confirm the item landed in DynamoDB
+aws --endpoint-url https://127.0.0.1:9297 --ca-bundle ~/.aws/emulator/9297/ca.pem --region us-east-1 \
+  dynamodb scan --table-name lambda-test-table
+```
+
+### 6.4 Destroy
+
+```bash
+cd local
+tofu destroy -auto-approve
+```
+
+### OpenTofu gotchas with the emulator
+
+- **Don't mix** the CLI scripts (`provision-cli.sh`) and OpenTofu against the
+  same running emulator. The scripts create resources OpenTofu's state doesn't
+  know about, which causes `EntityAlreadyExists` on `tofu apply`. Restart the
+  container (wipes in-memory state) before switching methods.
+- **In-memory state:** after you restart the container, the emulator is empty
+  but `terraform.tfstate` still lists the old resources. Re-run `tofu apply`
+  (it will recreate them). If apply errors on an already-"tracked" resource,
+  run `tofu destroy` or start from a fresh state.
+- **Perpetual harmless diff:** `tofu plan` may always show a 1-resource in-place
+  update on the DynamoDB table (`on_demand_throughput = -1 -> null`). This is an
+  emulator `DescribeTable` fidelity quirk and does not affect behavior.
+- **`Duplicate provider` / `Duplicate resource` errors on `tofu init`:** you're
+  running in the wrong folder (the project's `opentofu/` dir). Use `local/`.
 
 ---
 
@@ -237,6 +327,7 @@ docker rm -f aws-emulator
 | Symptom | Cause / fix |
 |---------|-------------|
 | `aws: error: argument command: Invalid choice` | `$E` is empty in this shell. Re-run the exports in section 4.3, or pass `--endpoint-url`/`--ca-bundle` literally. |
+| `zsh: no such file or directory: aws --endpoint-url ...` | zsh doesn't word-split variables. Use the `awsx` function or `${=E}` (section 4.3). |
 | `Invalid base64` on invoke | Add `--cli-binary-format raw-in-base64-out`. |
 | `Requested resource not found` from the Lambda | DynamoDB table missing — run section 4.4. |
 | `AccessDeniedException ... dynamodb:*` | Role missing the DynamoDB policy — run section 4.5. |
