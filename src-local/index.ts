@@ -1,7 +1,7 @@
 import {
   DynamoDBClient,
   PutItemCommand,
-  ScanCommand,
+  DescribeTableCommand,
 } from '@aws-sdk/client-dynamodb';
 
 // Local gateway endpoint (e.g. LocalStack/Floci). When unset, the SDK uses its
@@ -41,15 +41,13 @@ export const handler = async (event: any) => {
 
     if (action === 'put') {
       return await putItemToDynamoDB(event);
-    } else if (action === 'scan') {
-      return await scanDynamoDB();
     } else if (action === 'test') {
       return await testDynamoConnection();
     } else {
       return {
         statusCode: 400,
         body: JSON.stringify({
-          error: "Invalid action. Use 'put', 'scan', or 'test'",
+          error: "Invalid action. Use 'put' or 'test'",
         }),
       };
     }
@@ -91,30 +89,11 @@ async function putItemToDynamoDB(event: any) {
   };
 }
 
-async function scanDynamoDB() {
-  const params = {
-    TableName: TABLE_NAME,
-  };
-
-  const result = await dynamoClient.send(new ScanCommand(params));
-
-  return {
-    statusCode: 200,
-    body: JSON.stringify({
-      message: 'Successfully scanned DynamoDB table',
-      itemCount: result.Items?.length || 0,
-      items: result.Items || [],
-    }),
-  };
-}
-
 async function testDynamoConnection() {
   try {
-    const params = {
-      TableName: TABLE_NAME,
-    };
-
-    const result = await dynamoClient.send(new ScanCommand(params));
+    const result = await dynamoClient.send(
+      new DescribeTableCommand({ TableName: TABLE_NAME })
+    );
 
     return {
       statusCode: 200,
@@ -122,7 +101,7 @@ async function testDynamoConnection() {
         message: '✅ Successfully connected to DynamoDB',
         endpoint: ENDPOINT_LABEL,
         table: TABLE_NAME,
-        itemCount: result.Items?.length || 0,
+        tableStatus: result.Table?.TableStatus,
         timestamp: new Date().toISOString(),
       }),
     };

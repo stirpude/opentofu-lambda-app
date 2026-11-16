@@ -97,15 +97,15 @@ E="--endpoint-url $AWS_ENDPOINT_URL --ca-bundle $AWS_CA_BUNDLE"
 aws $E lambda invoke --function-name my-func --cli-binary-format raw-in-base64-out \
   --payload '{"action":"put","id":"order-123","data":"hello"}' out.json && cat out.json
 
-# read it back through the Lambda
+# check connectivity through the Lambda
 aws $E lambda invoke --function-name my-func --cli-binary-format raw-in-base64-out \
-  --payload '{"action":"scan"}' out.json && cat out.json
+  --payload '{"action":"test"}' out.json && cat out.json
 
 # verify directly against the emulator's DynamoDB
 aws $E dynamodb scan --table-name lambda-test-table
 ```
 
-Supported `action` values: `put`, `scan`, `test`.
+Supported `action` values: `put`, `test`.
 
 ## Step 5 — Tear down
 

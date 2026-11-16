@@ -88,7 +88,7 @@ fi
 log "Attaching DynamoDB policy to '$ROLE_NAME' ..."
 "${AWS[@]}" iam put-role-policy --role-name "$ROLE_NAME" \
   --policy-name "${FUNCTION_NAME}-dynamodb" \
-  --policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["dynamodb:PutItem","dynamodb:GetItem","dynamodb:Scan","dynamodb:Query","dynamodb:DescribeTable"],"Resource":"*"}]}' >/dev/null
+  --policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["dynamodb:PutItem","dynamodb:DescribeTable"],"Resource":"*"}]}' >/dev/null
 
 # ---- 5. Lambda function -----------------------------------------------------
 ROLE_ARN="arn:aws:iam::000000000000:role/${ROLE_NAME}"
@@ -125,4 +125,4 @@ echo
 echo "Try it:"
 echo "  aws --endpoint-url $ENDPOINT --ca-bundle $CA --region $REGION \\"
 echo "    lambda invoke --function-name $FUNCTION_NAME --cli-binary-format raw-in-base64-out \\"
-echo "    --payload '{\"action\":\"scan\"}' out.json && cat out.json"
+echo "    --payload '{\"action\":\"test\"}' out.json && cat out.json"

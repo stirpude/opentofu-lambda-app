@@ -131,7 +131,7 @@ aws $E iam create-role --role-name my-func-role \
 
 aws $E iam put-role-policy --role-name my-func-role \
   --policy-name my-func-dynamodb \
-  --policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["dynamodb:PutItem","dynamodb:GetItem","dynamodb:Scan","dynamodb:Query","dynamodb:DescribeTable"],"Resource":"*"}]}'
+  --policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["dynamodb:PutItem","dynamodb:DescribeTable"],"Resource":"*"}]}'
 ```
 
 ### 4.6 Build and zip the Lambda code
@@ -160,7 +160,8 @@ aws $E lambda create-function --function-name my-func \
 
 ## 5. Invoke and verify
 
-The handler supports three actions via the payload: `put`, `scan`, `test`.
+The handler supports two actions via the payload: `put` (write an item) and
+`test` (check connectivity via DescribeTable).
 
 ```bash
 # write an item THROUGH the Lambda
@@ -169,10 +170,10 @@ aws $E lambda invoke --function-name my-func \
   --payload '{"action":"put","id":"order-123","data":"hello"}' out.json
 cat out.json          # -> statusCode 201, "Item successfully written to DynamoDB"
 
-# read items back THROUGH the Lambda
+# check connectivity THROUGH the Lambda
 aws $E lambda invoke --function-name my-func \
   --cli-binary-format raw-in-base64-out \
-  --payload '{"action":"scan"}' out.json
+  --payload '{"action":"test"}' out.json
 cat out.json
 
 # verify directly against the emulator's DynamoDB
