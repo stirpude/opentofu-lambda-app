@@ -1,0 +1,1 @@
+{"statusCode":500,"body":"{\"message\":\"❌ Failed to connect to DynamoDB\",\"endpoint\":\"default (emulator/AWS-managed)\",\"error\":\"Requested resource not found\"}"}
