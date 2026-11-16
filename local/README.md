@@ -5,6 +5,27 @@ This stack provisions and runs the TypeScript Lambda and its DynamoDB table
 — no AWS account, no deployment. OpenTofu talks to the emulator exactly as it
 would to AWS.
 
+## Quick start (AWS CLI only — no OpenTofu)
+
+If you just want the container up and resources created via the AWS CLI:
+
+```bash
+cd local
+./start-and-provision.sh     # builds image if needed, starts emulator, creates all resources
+```
+
+Or, if your container is already running:
+
+```bash
+cd local
+./provision-cli.sh           # creates DynamoDB table, IAM role/policy, Lambda, runs a smoke test
+```
+
+Both scripts are idempotent (safe to re-run) and finish with a working
+`my-func` Lambda + `lambda-test-table`. The rest of this document describes the
+OpenTofu path and the manual steps.
+
+
 ## Why AWS Emulator (vs. the LocalStack config in `opentofu/local/`)
 
 The emulator is generated from AWS API models and aims for full fidelity on
