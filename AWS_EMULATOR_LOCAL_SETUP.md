@@ -17,6 +17,10 @@ Restarting the container wipes all resources.
 Docker · OpenTofu ≥ 1.0 · Node 20 (`nvm use 20`) · AWS CLI.
 Apple Silicon uses the `aarch64` package in the `Dockerfile` (change to `x86_64` on Intel).
 
+> **Start the Docker daemon first** (Docker Desktop / Rancher Desktop must be
+> running). Verify with `docker info`; if it errors, the emulator container
+> won't start.
+
 ---
 
 ## Option A — one command (CLI)
@@ -140,5 +144,6 @@ docker rm -f aws-emulator      # in-memory state is lost
 | Resources gone after restart | expected (in-memory) — re-provision |
 | `SSL validation failed` | add `--ca-bundle ~/.aws/emulator/9297/ca.pem` |
 | `??=` / npm error on build | use Node 20 (`nvm use 20`) |
+| `Cannot connect to the Docker daemon` | Start Docker Desktop/Rancher Desktop; verify with `docker info` |
 | `Duplicate provider`/`resource` on `tofu init` | wrong folder — run in `local/` |
 | Perpetual `on_demand_throughput` diff | harmless emulator quirk |
