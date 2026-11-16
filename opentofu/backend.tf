@@ -1,9 +1,7 @@
 terraform {
-  backend "s3" {
-    bucket         = "opentofu-state-391122274211"
-    key            = "opentofu.tfstate"
-    region         = "us-east-1"
-    dynamodb_table = "opentofu-locks"
-    encrypt        = true
+  # Using local backend for demonstration
+  # In production, use remote S3 backend with proper access controls
+  backend "local" {
+    path = "terraform.tfstate"
   }
 }
