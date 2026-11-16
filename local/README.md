@@ -25,6 +25,29 @@ Both scripts are idempotent (safe to re-run) and finish with a working
 `my-func` Lambda + `lambda-test-table`. The rest of this document describes the
 OpenTofu path and the manual steps.
 
+## How provisioning runs at container start
+
+The emulator keeps state **in memory**, so resources can't be baked into the
+image — they must be created *after* the container starts. `start-and-provision.sh`
+chains both steps:
+
+```
+start-and-provision.sh
+  1. build image (if missing)  ──► docker build -t aws-emulator .
+  2. (re)start container       ──► docker run ... aws-emulator -p 9297 -a off
+  3. run provision-cli.sh:
+       a. wait for health check (https://127.0.0.1:9297/__admin/health)
+       b. build + zip src-local
+       c. create DynamoDB table
+       d. create IAM role + DynamoDB policy
+       e. create (or update) the Lambda
+       f. smoke-test invoke (action=put)
+```
+
+So one command gives a ready environment. After any container restart (state is
+wiped), just re-run `./start-and-provision.sh` — or `./provision-cli.sh` if the
+container is already up.
+
 
 ## Why AWS Emulator (vs. the LocalStack config in `opentofu/local/`)
 
